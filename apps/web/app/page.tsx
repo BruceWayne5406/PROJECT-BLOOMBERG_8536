@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function HomePage() {
   return (
     <main className="page">
-      <p className="kicker">Phase 1 · schema + seed</p>
+      <p className="kicker">Phase 2 · forecast publish</p>
       <h1>Supplier–buyer commitment platform</h1>
       <p className="lede">
         System of record for forecasts, commits, and change-orders. Contracts stay
@@ -24,7 +24,7 @@ export default function HomePage() {
       </p>
       <nav className="links">
         <Link href="/forecasts">
-          Forecasts <span>Phase 2 — publish + versioning</span>
+          Forecasts <span>Publish, version history, deltas</span>
         </Link>
         <Link href="/commits">
           Commits <span>Phase 3 — splits, gap, late</span>

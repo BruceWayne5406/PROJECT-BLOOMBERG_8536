@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@scp/domain": "*",
+    "@tanstack/react-query": "^5.89.0",
+    "@tanstack/react-table": "^8.21.3",
     "next": "^15.5.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"

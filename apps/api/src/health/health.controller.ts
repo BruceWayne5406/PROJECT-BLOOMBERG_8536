@@ -16,7 +16,7 @@ export class HealthController {
     }
     return {
       status: postgres === "up" ? "ok" : "degraded",
-      phase: 1,
+      phase: 2,
       postgres,
     };
   }

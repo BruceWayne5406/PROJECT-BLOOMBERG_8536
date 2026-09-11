@@ -14,6 +14,7 @@
     "@scp/db": "*",
     "@scp/domain": "*",
     "@scp/event-contracts": "*",
+    "drizzle-orm": "^0.44.5",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },

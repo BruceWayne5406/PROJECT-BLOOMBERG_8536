@@ -1,5 +1,9 @@
 import { Module } from "@nestjs/common";
+import { ForecastController } from "./forecast.controller";
+import { ForecastService } from "./forecast.service";
 
-/** Phase 2. ForecastLine publish + immutable versioning. */
-@Module({})
+@Module({
+  controllers: [ForecastController],
+  providers: [ForecastService],
+})
 export class ForecastModule {}

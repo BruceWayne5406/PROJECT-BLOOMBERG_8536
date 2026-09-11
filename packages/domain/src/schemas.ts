@@ -91,6 +91,41 @@ export const uomConversionSchema = z.object({
   factor: z.string(),
 });
 
+const qtyInput = z
+  .union([z.string(), z.number()])
+  .transform((v) => String(v))
+  .refine((v) => /^-?\d+(\.\d+)?$/.test(v), "quantity must be a decimal")
+  .refine((v) => Number(v) > 0, "quantity must be greater than 0");
+
+export const publishForecastSchema = z.object({
+  forecastId: z
+    .string()
+    .regex(/^FC-[A-Z0-9-]+$/i, "forecastId must look like FC-88421")
+    .optional(),
+  tradingPartnerSetupId: z.string().uuid(),
+  partId: z.string().uuid(),
+  shipToSiteId: z.string().uuid(),
+  requestedQty: qtyInput,
+  requestedDate: isoDate,
+  demandType: z.enum(DEMAND_TYPES),
+  priority: z.coerce.number().int().positive().optional().default(100),
+  program: z.string().min(1).nullable().optional(),
+  asDraft: z.boolean().optional().default(false),
+});
+
+export const republishForecastSchema = z.object({
+  requestedQty: qtyInput,
+  requestedDate: isoDate,
+  demandType: z.enum(DEMAND_TYPES),
+  priority: z.coerce.number().int().positive().optional(),
+  program: z.string().min(1).nullable().optional(),
+  partId: z.string().uuid().optional(),
+  shipToSiteId: z.string().uuid().optional(),
+});
+
+export type PublishForecastInput = z.infer<typeof publishForecastSchema>;
+export type RepublishForecastInput = z.infer<typeof republishForecastSchema>;
+
 export const forecastLineSchema = z.object({
   forecastId: z.string().min(1),
   version: z.number().int().positive(),
