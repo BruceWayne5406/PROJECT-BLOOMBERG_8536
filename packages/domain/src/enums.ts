@@ -76,5 +76,11 @@ export type SiteRole = (typeof SITE_ROLES)[number];
 export const PARTY_TYPES = ["buyer", "supplier", "system"] as const;
 export type PartyType = (typeof PARTY_TYPES)[number];
 
+export const AUTH_PARTY_TYPES = ["buyer", "supplier"] as const;
+export type AuthPartyType = (typeof AUTH_PARTY_TYPES)[number];
+
+export const USER_ROLES = ["planner", "procurement"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
 export const EXECUTION_EVENT_TYPES = ["asn", "receipt", "invoice"] as const;
 export type ExecutionEventType = (typeof EXECUTION_EVENT_TYPES)[number];

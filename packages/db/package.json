@@ -12,13 +12,14 @@
   "scripts": {
     "generate": "drizzle-kit generate",
     "migrate": "tsx src/migrate.ts",
-    "seed": "tsx src/seed.ts",
+    "seed": "tsx src/seed.ts && tsx src/seed-auth.ts",
     "reset": "tsx src/reset.ts && tsx src/migrate.ts && tsx src/seed.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@scp/domain": "*",
     "@scp/event-contracts": "*",
+    "bcryptjs": "^3.0.2",
     "drizzle-orm": "^0.44.5",
     "pg": "^8.16.3"
   },

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   ACK_STATUSES,
+  AUTH_PARTY_TYPES,
   CHANGE_ORDER_STATUSES,
   COMMIT_GRADES,
   COMMIT_STATUSES,
@@ -15,6 +16,7 @@ import {
   REASON_CODES,
   SITE_ROLES,
   UOMS,
+  USER_ROLES,
 } from "./enums";
 
 const qty = z.string().regex(/^-?\d+(\.\d+)?$/, "quantity must be a decimal string");
@@ -217,6 +219,23 @@ export const auditEventSchema = z.object({
   reasonCode: z.enum(REASON_CODES).nullable(),
   payload: z.record(z.unknown()),
 });
+
+export const loginSchema = z.object({
+  email: z.string().email("Work email is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export const signupSchema = z.object({
+  email: z.string().email("Work email is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  displayName: z.string().min(2, "Name is required for the audit trail"),
+  partyType: z.enum(AUTH_PARTY_TYPES),
+  partnerId: z.string().uuid("Select your company"),
+  role: z.enum(USER_ROLES),
+});
+
+export type LoginInput = z.infer<typeof loginSchema>;
+export type SignupInput = z.infer<typeof signupSchema>;
 
 export type ForecastLineInput = z.infer<typeof forecastLineSchema>;
 export type ForecastCommitInput = z.infer<typeof forecastCommitSchema>;

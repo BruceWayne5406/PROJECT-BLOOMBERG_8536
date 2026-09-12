@@ -1,6 +1,9 @@
 import { Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
 import { DbModule } from "./db/db.module";
 import { HealthModule } from "./health/health.module";
+import { AuthGuard } from "./modules/auth/auth.guard";
+import { AuthModule } from "./modules/auth/auth.module";
 import { IdentityModule } from "./modules/identity/identity.module";
 import { TradingPartnerSetupModule } from "./modules/trading-partner-setup/trading-partner-setup.module";
 import { ForecastModule } from "./modules/forecast/forecast.module";
@@ -16,6 +19,7 @@ import { AuditModule } from "./modules/audit/audit.module";
   imports: [
     DbModule,
     HealthModule,
+    AuthModule,
     IdentityModule,
     TradingPartnerSetupModule,
     ForecastModule,
@@ -27,5 +31,6 @@ import { AuditModule } from "./modules/audit/audit.module";
     ErpWritebackModule,
     AuditModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: AuthGuard }],
 })
 export class AppModule {}

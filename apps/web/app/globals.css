@@ -138,6 +138,62 @@ nav.links a span {
   color: var(--text-muted);
 }
 
+.app-nav-user {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+}
+
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+  gap: 48px;
+  align-items: center;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.auth-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.auth-tabs button {
+  flex: 1;
+  font: inherit;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.auth-tabs button.active {
+  color: var(--text);
+  border-color: var(--brand);
+  background: var(--surface);
+}
+
+@media (max-width: 800px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+    padding-top: 32px;
+  }
+}
+
 .page-wide {
   max-width: 1120px;
 }

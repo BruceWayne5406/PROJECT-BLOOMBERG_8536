@@ -1,6 +1,8 @@
 import { Controller, Get } from "@nestjs/common";
 import { createPool } from "@scp/db";
+import { Public } from "../modules/auth/public";
 
+@Public()
 @Controller()
 export class HealthController {
   @Get("health")

@@ -1,6 +1,3 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-const ACTOR = "buyer.planner.seed";
-
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -11,11 +8,10 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`/api/backend${path}`, {
     ...init,
     headers: {
       "content-type": "application/json",
-      "x-actor-id": ACTOR,
       ...init?.headers,
     },
   });

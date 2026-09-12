@@ -1,5 +1,7 @@
-import { pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { partyTypeEnum, siteRoleEnum } from "./enums";
+
+export const userRoleEnum = pgEnum("user_role", ["planner", "procurement"]);
 
 export const actors = pgTable("actors", {
   id: text("id").primaryKey(),
@@ -54,3 +56,14 @@ export const sites = pgTable(
   },
   (t) => [unique("sites_party_code_role_uq").on(t.siteCode, t.role, t.partyType)],
 );
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  actorId: text("actor_id")
+    .notNull()
+    .references(() => actors.id),
+  role: userRoleEnum("role").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
