@@ -13,6 +13,7 @@ import { DEMAND_TYPES } from "@scp/domain";
 import { api, type ForecastDetail, type ForecastRecord } from "@/lib/api";
 import { formatDate, formatNeedBy, formatQty, signedDelta } from "@/lib/format";
 import { DemandChip, StatusChip } from "@/components/chips";
+import { CommitPanel } from "./commit-panel";
 
 const versionColumns: ColumnDef<ForecastRecord>[] = [
   {
@@ -134,6 +135,8 @@ export function ForecastDetailView({ forecastId }: { forecastId: string }) {
           </dd>
         </div>
       </dl>
+
+      <CommitPanel forecastId={current.forecastId} />
 
       {latestDiff ? (
         <section className="panel">

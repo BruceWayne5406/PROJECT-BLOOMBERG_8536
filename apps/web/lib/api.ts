@@ -102,6 +102,66 @@ export type CatalogPart = {
   porId: string | null;
 };
 
+export type CommitRecord = {
+  id: string;
+  commitId: string;
+  version: number;
+  forecastVersion?: number;
+  parentForecastId: string;
+  parentForecastLineId: string;
+  committedQty: string;
+  committedDate: string | null;
+  commitGrade: "planning" | "firming" | "frozen" | null;
+  uncommittedQty: string;
+  reasonCode: "CAPACITY" | "MATERIAL" | "YIELD" | "PACK" | "OTHER" | null;
+  comment: string | null;
+  committedBy: string;
+  committedAt: string | null;
+  status: "offered" | "accepted" | "rejected" | "superseded";
+  lateFlag: boolean;
+  isRemainder: boolean;
+  binding: boolean;
+};
+
+export type CommitMetrics = {
+  requestedQty: string;
+  committedQty: string;
+  gapQty: string;
+  lateQty: string;
+  lateFlag: boolean;
+  gapReasonCode: string | null;
+  splitCount: number;
+  remainderCount: number;
+  commitAgeHours: number | null;
+};
+
+export type PriorCommitResponse = {
+  forecastVersion: number;
+  requestedQty: string;
+  requestedDate: string;
+  metrics: CommitMetrics;
+  splits: CommitRecord[];
+};
+
+export type ForecastCommits = {
+  forecastId: string;
+  forecastVersion: number;
+  forecastLineId: string;
+  forecastStatus: string;
+  requestedQty: string;
+  requestedDate: string;
+  demandType: "base" | "upside" | "npi" | "last_time_buy";
+  uom: string;
+  needByConvention: string;
+  buyerId: string;
+  supplierId: string;
+  program: string | null;
+  metrics: CommitMetrics;
+  splits: CommitRecord[];
+  history: CommitRecord[];
+  priorResponse: PriorCommitResponse | null;
+};
+
 export type CatalogSite = {
   id: string;
   partyType: string;

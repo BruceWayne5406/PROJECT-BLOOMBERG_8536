@@ -128,6 +128,49 @@ export const republishForecastSchema = z.object({
 export type PublishForecastInput = z.infer<typeof publishForecastSchema>;
 export type RepublishForecastInput = z.infer<typeof republishForecastSchema>;
 
+const qtyNonNeg = z
+  .union([z.string(), z.number()])
+  .transform((v) => String(v))
+  .refine((v) => /^-?\d+(\.\d+)?$/.test(v), "quantity must be a decimal")
+  .refine((v) => Number(v) >= 0, "quantity cannot be negative");
+
+export const commitSplitInputSchema = z
+  .object({
+    commitId: z
+      .string()
+      .regex(/^CM-[A-Z0-9-]+$/i, "commitId must look like CM-01")
+      .optional(),
+    committedQty: qtyNonNeg,
+    committedDate: isoDate.nullable().optional(),
+    commitGrade: z.enum(COMMIT_GRADES).nullable().optional(),
+    reasonCode: z.enum(REASON_CODES).nullable().optional(),
+    comment: z.string().nullable().optional(),
+  })
+  .refine((row) => Number(row.committedQty) > 0 || Boolean(row.reasonCode), {
+    message: "A zero-qty remainder needs a reason_code",
+  });
+
+export const offerSplitsSchema = z.object({
+  splits: z.array(commitSplitInputSchema).min(1),
+});
+
+export const supersedeCommitSchema = z.object({
+  committedQty: qtyNonNeg,
+  committedDate: isoDate.nullable().optional(),
+  commitGrade: z.enum(COMMIT_GRADES).nullable().optional(),
+  reasonCode: z.enum(REASON_CODES).nullable().optional(),
+  comment: z.string().nullable().optional(),
+});
+
+export const decideCommitSchema = z.object({
+  decision: z.enum(["accepted", "rejected"]),
+});
+
+export type CommitSplitInput = z.infer<typeof commitSplitInputSchema>;
+export type OfferSplitsInput = z.infer<typeof offerSplitsSchema>;
+export type SupersedeCommitInput = z.infer<typeof supersedeCommitSchema>;
+export type DecideCommitInput = z.infer<typeof decideCommitSchema>;
+
 export const forecastLineSchema = z.object({
   forecastId: z.string().min(1),
   version: z.number().int().positive(),

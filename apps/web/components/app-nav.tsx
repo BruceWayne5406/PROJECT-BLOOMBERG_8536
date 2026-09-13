@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 
 const links = [
   { href: "/forecasts", label: "Forecasts" },
-  { href: "/commits", label: "Commits", muted: true },
+  { href: "/commits", label: "Commits" },
   { href: "/exceptions", label: "Exceptions", muted: true },
   { href: "/purchase-orders", label: "POs", muted: true },
   { href: "/change-orders", label: "Change orders", muted: true },

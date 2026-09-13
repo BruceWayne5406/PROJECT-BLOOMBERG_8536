@@ -407,3 +407,96 @@ nav.links a span {
   margin: 4px 0 0;
 }
 
+.metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0 20px;
+}
+
+.metrics-strip dt {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metrics-strip dd {
+  margin: 4px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-exception dd,
+.exception-text {
+  color: var(--exception);
+}
+
+.chip-planning {
+  color: var(--planning);
+  border-color: var(--planning);
+}
+
+.chip-firming {
+  color: var(--firming);
+  border-color: var(--firming);
+}
+
+.chip-frozen,
+.chip-accepted {
+  color: var(--frozen);
+  border-color: var(--frozen);
+}
+
+.chip-offered {
+  color: var(--planning);
+  border-color: var(--planning);
+}
+
+.chip-rejected {
+  color: var(--superseded);
+  text-decoration: line-through;
+}
+
+.prior-response {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.prior-response h3 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.offer-form {
+  margin-top: 24px;
+}
+
+.offer-form h3 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.split-row,
+.mini-form,
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.split-row input,
+.split-row select,
+.mini-form input,
+.mini-form select {
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+

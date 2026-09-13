@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function HomePage() {
   return (
     <main className="page">
-      <p className="kicker">Phase 2 · forecast publish</p>
+      <p className="kicker">Phase 3 · commits</p>
       <h1>Supplier–buyer commitment platform</h1>
       <p className="lede">
         System of record for forecasts, commits, and change-orders. Contracts stay
@@ -20,14 +20,16 @@ export default function HomePage() {
       <p className="lede">
         Seeded example: <code>FC-88421</code> v1 · 100,000 units · dock 15 Dec 2026.
         Split commits <code>CM-01</code> / <code>CM-02</code> / <code>CM-03</code>,
-        gap 10,000 (<code>CAPACITY</code>), late qty 15,000 (planning fact).
+        gap 10,000 (<code>CAPACITY</code>), late qty 15,000 (planning fact). A
+        republish starts the new version uncommitted; those splits stay on the
+        version they answered.
       </p>
       <nav className="links">
         <Link href="/forecasts">
           Forecasts <span>Publish, version history, deltas</span>
         </Link>
         <Link href="/commits">
-          Commits <span>Phase 3 — splits, gap, late</span>
+          Commits <span>Splits, gap, late — planning vs binding</span>
         </Link>
         <Link href="/exceptions">
           Exceptions <span>Phase 4 / 9 — SLA and the five questions</span>
