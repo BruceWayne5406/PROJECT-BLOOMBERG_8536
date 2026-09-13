@@ -84,3 +84,12 @@ export type UserRole = (typeof USER_ROLES)[number];
 
 export const EXECUTION_EVENT_TYPES = ["asn", "receipt", "invoice"] as const;
 export type ExecutionEventType = (typeof EXECUTION_EVENT_TYPES)[number];
+
+export const EXCEPTION_TYPES = ["sla_silence", "gap", "late"] as const;
+export type ExceptionType = (typeof EXCEPTION_TYPES)[number];
+
+export const EXCEPTION_STATUSES = ["open", "acknowledged", "resolved"] as const;
+export type ExceptionStatus = (typeof EXCEPTION_STATUSES)[number];
+
+export const WRITEBACK_STATUSES = ["pending", "succeeded", "failed"] as const;
+export type WritebackStatus = (typeof WRITEBACK_STATUSES)[number];

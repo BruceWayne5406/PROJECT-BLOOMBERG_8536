@@ -12,7 +12,7 @@
   "scripts": {
     "generate": "drizzle-kit generate",
     "migrate": "tsx src/migrate.ts",
-    "seed": "tsx src/seed.ts && tsx src/seed-auth.ts",
+    "seed": "tsx src/seed.ts && tsx src/seed-auth.ts && tsx src/seed-later.ts",
     "reset": "tsx src/reset.ts && tsx src/migrate.ts && tsx src/seed.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

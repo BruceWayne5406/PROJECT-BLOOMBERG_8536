@@ -7,10 +7,11 @@ import { useQuery } from "@tanstack/react-query";
 const links = [
   { href: "/forecasts", label: "Forecasts" },
   { href: "/commits", label: "Commits" },
-  { href: "/exceptions", label: "Exceptions", muted: true },
-  { href: "/purchase-orders", label: "POs", muted: true },
-  { href: "/change-orders", label: "Change orders", muted: true },
-  { href: "/partners", label: "Partners", muted: true },
+  { href: "/exceptions", label: "Exceptions" },
+  { href: "/purchase-orders", label: "POs" },
+  { href: "/change-orders", label: "Change orders" },
+  { href: "/import", label: "Import" },
+  { href: "/partners", label: "Partners" },
 ];
 
 type Me = {
@@ -48,11 +49,7 @@ export function AppNav() {
       </Link>
       <nav>
         {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={link.muted ? "muted" : undefined}
-          >
+          <Link key={link.href} href={link.href}>
             {link.label}
           </Link>
         ))}

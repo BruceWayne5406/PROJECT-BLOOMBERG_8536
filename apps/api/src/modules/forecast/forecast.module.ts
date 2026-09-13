@@ -5,5 +5,6 @@ import { ForecastService } from "./forecast.service";
 @Module({
   controllers: [ForecastController],
   providers: [ForecastService],
+  exports: [ForecastService],
 })
 export class ForecastModule {}

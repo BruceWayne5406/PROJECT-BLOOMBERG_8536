@@ -42,6 +42,12 @@ code,
   padding: 48px 24px 80px;
 }
 
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .kicker {
   color: var(--firming);
   font-size: 0.75rem;
@@ -455,6 +461,23 @@ nav.links a span {
 .chip-rejected {
   color: var(--superseded);
   text-decoration: line-through;
+}
+
+.chip-open,
+.chip-sla_silence,
+.chip-gap,
+.chip-late {
+  color: var(--exception);
+  border-color: var(--exception);
+}
+
+.chip-acknowledged {
+  color: var(--firming);
+  border-color: var(--firming);
+}
+
+.chip-resolved {
+  color: var(--superseded);
 }
 
 .prior-response {

@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function HomePage() {
   return (
     <main className="page">
-      <p className="kicker">Phase 3 · commits</p>
+      <p className="kicker">Phases 1–9 · forecasts through write-back</p>
       <h1>Supplier–buyer commitment platform</h1>
       <p className="lede">
         System of record for forecasts, commits, and change-orders. Contracts stay
@@ -32,16 +32,19 @@ export default function HomePage() {
           Commits <span>Splits, gap, late — planning vs binding</span>
         </Link>
         <Link href="/exceptions">
-          Exceptions <span>Phase 4 / 9 — SLA and the five questions</span>
+          Exceptions <span>SLA silence, gap, late — five questions</span>
         </Link>
         <Link href="/purchase-orders">
-          Purchase orders <span>Phase 5 — binding conversion</span>
+          Purchase orders <span>Binding conversion + ack + OTIF</span>
         </Link>
         <Link href="/change-orders">
-          Change orders <span>Phase 6 — reason_code required</span>
+          Change orders <span>Dual accept, reason_code required</span>
+        </Link>
+        <Link href="/import">
+          Import <span>Excel channel — no guess-fill</span>
         </Link>
         <Link href="/partners">
-          Trading partner setup <span>Fences and bands as data</span>
+          Trading partner setup <span>Fences, bands, SLA as data</span>
         </Link>
       </nav>
     </main>

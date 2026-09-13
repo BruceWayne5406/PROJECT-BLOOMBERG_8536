@@ -166,6 +166,57 @@ export const decideCommitSchema = z.object({
   decision: z.enum(["accepted", "rejected"]),
 });
 
+export const acknowledgeExceptionSchema = z.object({
+  note: z.string().min(1).max(500).nullable().optional(),
+});
+
+export const convertCommitSchema = z.object({
+  poNumber: z
+    .string()
+    .regex(/^PO-[A-Z0-9-]+$/i, "poNumber must look like PO-88421")
+    .optional(),
+  price: qty.nullable().optional(),
+});
+
+export const acknowledgePoSchema = z.object({
+  ackStatus: z.enum(ACK_STATUSES),
+  promiseQty: qtyInput,
+  promiseDate: isoDate,
+  changeReason: z.enum(REASON_CODES).nullable().optional(),
+}).refine(
+  (row) =>
+    row.ackStatus === "accepted" || Boolean(row.changeReason),
+  { message: "split, rejected, or date_change acknowledgements need a changeReason" },
+);
+
+export const proposeChangeOrderSchema = z.object({
+  proposedQty: z.union([qtyInput, z.null()]).optional(),
+  proposedDate: isoDate.nullable().optional(),
+  reasonCode: z.enum(REASON_CODES),
+  msaClauseRef: z.string().min(1).nullable().optional(),
+  comment: z.string().nullable().optional(),
+}).refine((row) => row.proposedQty != null || row.proposedDate != null, {
+  message: "A change order must propose a qty, a date, or both",
+});
+
+export const decideChangeOrderSchema = z.object({
+  decision: z.enum(["accepted", "rejected"]),
+});
+
+export const recordExecutionSchema = z.object({
+  eventType: z.enum(EXECUTION_EVENT_TYPES),
+  externalId: z.string().min(1),
+  qty: qtyInput.nullable().optional(),
+  occurredAt: z.string().datetime(),
+});
+
+export type AcknowledgeExceptionInput = z.infer<typeof acknowledgeExceptionSchema>;
+export type ConvertCommitInput = z.infer<typeof convertCommitSchema>;
+export type AcknowledgePoInput = z.infer<typeof acknowledgePoSchema>;
+export type ProposeChangeOrderInput = z.infer<typeof proposeChangeOrderSchema>;
+export type DecideChangeOrderInput = z.infer<typeof decideChangeOrderSchema>;
+export type RecordExecutionInput = z.infer<typeof recordExecutionSchema>;
+
 export type CommitSplitInput = z.infer<typeof commitSplitInputSchema>;
 export type OfferSplitsInput = z.infer<typeof offerSplitsSchema>;
 export type SupersedeCommitInput = z.infer<typeof supersedeCommitSchema>;

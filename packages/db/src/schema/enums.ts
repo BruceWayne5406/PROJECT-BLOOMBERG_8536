@@ -6,6 +6,8 @@ import {
   CONTRACT_DOCUMENT_TYPES,
   DEMAND_TYPES,
   EXECUTION_EVENT_TYPES,
+  EXCEPTION_STATUSES,
+  EXCEPTION_TYPES,
   FORECAST_STATUSES,
   HORIZON_ZONES,
   INGESTION_CHANNELS,
@@ -14,6 +16,7 @@ import {
   REASON_CODES,
   SITE_ROLES,
   UOMS,
+  WRITEBACK_STATUSES,
 } from "@scp/domain";
 import { pgEnum } from "drizzle-orm/pg-core";
 
@@ -43,4 +46,11 @@ export const siteRoleEnum = pgEnum("site_role", [...SITE_ROLES]);
 export const partyTypeEnum = pgEnum("party_type", [...PARTY_TYPES]);
 export const executionEventTypeEnum = pgEnum("execution_event_type", [
   ...EXECUTION_EVENT_TYPES,
+]);
+export const exceptionTypeEnum = pgEnum("exception_type", [...EXCEPTION_TYPES]);
+export const exceptionStatusEnum = pgEnum("exception_status", [
+  ...EXCEPTION_STATUSES,
+]);
+export const writebackStatusEnum = pgEnum("writeback_status", [
+  ...WRITEBACK_STATUSES,
 ]);

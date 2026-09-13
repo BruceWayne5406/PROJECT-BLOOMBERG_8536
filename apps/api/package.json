@@ -15,13 +15,18 @@
     "@scp/domain": "*",
     "@scp/event-contracts": "*",
     "bcryptjs": "^3.0.2",
+    "bullmq": "^6.3.4",
     "drizzle-orm": "^0.44.5",
+    "exceljs": "^4.4.0",
+    "ioredis": "^6.0.0",
     "jose": "^6.1.0",
+    "multer": "^2.2.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
+    "@types/multer": "^2.2.0",
     "@types/node": "^24.3.1",
     "tsx": "^4.20.5",
     "typescript": "^5.8.2"

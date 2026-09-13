@@ -15,3 +15,15 @@ export function toIso(value: Date | string | null | undefined): string | null {
   if (value instanceof Date) return value.toISOString();
   return value;
 }
+
+/** Count weekdays only. Holiday calendars are not in TPA data, so they are not invented. */
+export function addBusinessDays(start: Date, days: number): Date {
+  const d = new Date(start.getTime());
+  let added = 0;
+  while (added < days) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    const weekday = d.getUTCDay();
+    if (weekday !== 0 && weekday !== 6) added += 1;
+  }
+  return d;
+}

@@ -333,6 +333,33 @@ function RowActions({
     onSuccess: onDone,
   });
 
+  const convert = useMutation({
+    mutationFn: () =>
+      api(`/commits/${row.commitId}/convert`, {
+        method: "POST",
+        body: "{}",
+      }),
+    onSuccess: onDone,
+  });
+
+  if (row.status === "accepted" && row.binding && isBuyer) {
+    return (
+      <div className="row-actions">
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={convert.isPending}
+          onClick={() => convert.mutate()}
+        >
+          Convert to PO
+        </button>
+        {convert.error ? (
+          <p className="error-text">{(convert.error as Error).message}</p>
+        ) : null}
+      </div>
+    );
+  }
+
   if (row.status !== "offered") {
     return <span className="muted">—</span>;
   }

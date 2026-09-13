@@ -6,5 +6,7 @@ export * from "./commit";
 export * from "./purchase-order";
 export * from "./change-order";
 export * from "./execution";
+export * from "./exception";
+export * from "./writeback";
 export * from "./audit";
 export * from "./views";

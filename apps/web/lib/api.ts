@@ -171,3 +171,139 @@ export type CatalogSite = {
   role: string;
   name: string;
 };
+
+export type PurchaseOrderRecord = {
+  id: string;
+  poNumber: string;
+  line: string;
+  scheduleLine: string;
+  sourceCommitId: string;
+  sourceCommitVersion: number;
+  firmQty: string;
+  firmDate: string;
+  price: string | null;
+  buyerId: string;
+  supplierId: string;
+  createdBy: string;
+  forecastId: string | null;
+  binding: boolean;
+  latestAck: {
+    id: string;
+    ackStatus: string;
+    promiseQty: string;
+    promiseDate: string;
+    changeReason: string | null;
+    acknowledgedBy: string;
+    acknowledgedAt: string | null;
+  } | null;
+  acknowledgements: Array<{
+    id: string;
+    ackStatus: string;
+    promiseQty: string;
+    promiseDate: string;
+    changeReason: string | null;
+    acknowledgedBy: string;
+    acknowledgedAt: string | null;
+  }>;
+  execution: Array<{
+    id: string;
+    eventType: string;
+    externalId: string;
+    qty: string | null;
+    occurredAt: string | null;
+  }>;
+  otif: {
+    promiseDate: string | null;
+    promiseQty: string | null;
+    receiptDate: string | null;
+    receivedQty: string | null;
+    otif: boolean | null;
+  } | null;
+};
+
+export type ChangeOrderRecord = {
+  id: string;
+  changeOrderId: string;
+  version: number;
+  purchaseOrderId: string;
+  poNumber: string | null;
+  proposedQty: string | null;
+  proposedDate: string | null;
+  reasonCode: string;
+  status: string;
+  initiatedByParty: string;
+  initiatedBy: string;
+  buyerAcceptedAt: string | null;
+  supplierAcceptedAt: string | null;
+  msaClauseRef: string | null;
+};
+
+export type ExceptionRecord = {
+  id: string;
+  exceptionType: "sla_silence" | "gap" | "late";
+  status: "open" | "acknowledged" | "resolved";
+  forecastId: string;
+  forecastVersion: number;
+  forecastLineId: string;
+  commitId: string | null;
+  slaBusinessDays: number | null;
+  dueAt: string | null;
+  openedAt: string | null;
+  acknowledgedAt: string | null;
+  acknowledgedBy: string | null;
+  resolvedAt: string | null;
+  reasonCode: string | null;
+  summary: string;
+  payload: Record<string, unknown>;
+  collaboration: {
+    requested: {
+      forecastId: string;
+      version: number;
+      requestedQty: string;
+      requestedDate: string;
+      demandType: string;
+      uom: string;
+      needByConvention: string;
+      publishedAt: string | null;
+    } | null;
+    commits: Array<{
+      commitId: string;
+      version: number;
+      committedQty: string;
+      committedDate: string | null;
+      commitGrade: string | null;
+      status: string;
+      reasonCode: string | null;
+    }>;
+    gapQty: string | null;
+    purchaseOrders: Array<{
+      id: string;
+      poNumber: string;
+      line: string;
+      scheduleLine: string;
+      sourceCommitId: string;
+      firmQty: string;
+      firmDate: string;
+      ackStatus: string | null;
+      promiseDate: string | null;
+      promiseQty: string | null;
+      otif: boolean | null;
+      receivedQty: string | null;
+      receiptDate: string | null;
+    }>;
+    changeOrders: Array<{
+      changeOrderId: string;
+      version: number;
+      status: string;
+      reasonCode: string;
+      proposedQty: string | null;
+      proposedDate: string | null;
+    }>;
+    shipments: Array<{
+      eventType: string;
+      externalId: string;
+      qty: string | null;
+      occurredAt: string | null;
+    }>;
+  };
+};
