@@ -1,7 +1,7 @@
 "use client";
 
 import { AUTH_PARTY_TYPES, USER_ROLES } from "@scp/domain";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -12,6 +12,11 @@ type Org = {
   name: string;
 };
 
+const DEMO = {
+  buyer: { email: "planner@northstar.example", password: "Northstar2026!" },
+  supplier: { email: "planner@pacific.example", password: "Pacific2026!" },
+} as const;
+
 function errorMessage(data: unknown, fallback: string) {
   if (data && typeof data === "object" && "message" in data) {
     const message = (data as { message: string | string[] }).message;
@@ -21,16 +26,22 @@ function errorMessage(data: unknown, fallback: string) {
   return fallback;
 }
 
+function safeNext(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/login")) {
+    return "/forecasts";
+  }
+  return value;
+}
+
 export function AuthPanel() {
-  const router = useRouter();
   const search = useSearchParams();
-  const next = search.get("next") || "/forecasts";
+  const next = safeNext(search.get("next"));
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(DEMO.buyer.email);
+  const [password, setPassword] = useState(DEMO.buyer.password);
   const [displayName, setDisplayName] = useState("");
   const [partyType, setPartyType] = useState<(typeof AUTH_PARTY_TYPES)[number]>("buyer");
   const [partnerId, setPartnerId] = useState("");
@@ -70,6 +81,7 @@ export function AuthPanel() {
             };
       const res = await fetch(path, {
         method: "POST",
+        credentials: "same-origin",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -78,8 +90,8 @@ export function AuthPanel() {
         setError(errorMessage(data, "Could not sign in"));
         return;
       }
-      router.replace(next.startsWith("/") ? next : "/forecasts");
-      router.refresh();
+      // Full navigation so middleware sees the httpOnly session cookie.
+      window.location.assign(mode === "login" ? next : "/forecasts");
     } finally {
       setPending(false);
     }
@@ -127,7 +139,8 @@ export function AuthPanel() {
         <label>
           Work email
           <input
-            type="email"
+            type="text"
+            inputMode="email"
             autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -199,11 +212,33 @@ export function AuthPanel() {
             </p>
           </>
         ) : (
-          <p className="hint">
-            Demo buyer: <code>planner@northstar.example</code> / <code>Northstar2026!</code>
-            <br />
-            Demo supplier: <code>planner@pacific.example</code> / <code>Pacific2026!</code>
-          </p>
+          <>
+            <p className="hint">Demo seats — the form is filled with the buyer account.</p>
+            <div className="row-actions">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setEmail(DEMO.buyer.email);
+                  setPassword(DEMO.buyer.password);
+                  setError(null);
+                }}
+              >
+                Buyer demo
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setEmail(DEMO.supplier.email);
+                  setPassword(DEMO.supplier.password);
+                  setError(null);
+                }}
+              >
+                Supplier demo
+              </button>
+            </div>
+          </>
         )}
 
         {error ? <p className="error-text">{error}</p> : null}
