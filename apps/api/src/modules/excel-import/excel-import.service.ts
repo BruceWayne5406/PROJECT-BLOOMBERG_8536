@@ -188,7 +188,7 @@ export class ExcelImportService {
         priority: cell("priority") ? Number(cell("priority")) : undefined,
         program: cell("program") || null,
       });
-      const created = await this.forecasts.publish(parsed, user.sub);
+      const created = await this.forecasts.publish(parsed, user);
       accepted.push({ sheet: "forecasts", row: rowNumber, id: created.forecastId });
     } catch (err) {
       errors.push({

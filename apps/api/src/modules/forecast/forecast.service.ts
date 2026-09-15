@@ -5,6 +5,8 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import { assertBuyerSession, assertForecastPublisher } from "./forecast-auth";
+import type { SessionClaims } from "../auth/token";
 import {
   actors,
   buyers,
@@ -58,8 +60,9 @@ export class ForecastService {
     };
   }
 
-  async publish(input: PublishForecastInput, actorId: string) {
-    await this.assertActor(actorId);
+  async publish(input: PublishForecastInput, user: SessionClaims) {
+    assertBuyerSession(user);
+    await this.assertActor(user.sub);
     const forecastId = input.forecastId
       ? await this.assertNewForecastId(input.forecastId)
       : await this.allocateForecastId();
@@ -71,6 +74,7 @@ export class ForecastService {
         input.partId,
         input.shipToSiteId,
       );
+      assertForecastPublisher(user, ctx.tpa.buyerId);
       const now = new Date();
       const asDraft = input.asDraft ?? false;
       const [inserted] = await tx
@@ -93,16 +97,16 @@ export class ForecastService {
           shipToSiteId: ctx.site.id,
           uom: ctx.tpa.uom,
           needByConvention: ctx.tpa.needByConvention,
-          publishedBy: asDraft ? null : actorId,
+          publishedBy: asDraft ? null : user.sub,
         })
         .returning();
 
       const line = inserted!;
       if (!asDraft) {
-        await this.recordPublish(tx, line, actorId, "publish");
+        await this.recordPublish(tx, line, user.sub, "publish");
       } else {
         await tx.insert(auditEvents).values({
-          actorId,
+          actorId: user.sub,
           entityType: "forecast_line",
           entityId: `${line.forecastId}:v${line.version}`,
           action: "draft",
@@ -114,13 +118,15 @@ export class ForecastService {
     });
   }
 
-  async republish(forecastId: string, input: RepublishForecastInput, actorId: string) {
-    await this.assertActor(actorId);
+  async republish(forecastId: string, input: RepublishForecastInput, user: SessionClaims) {
+    assertBuyerSession(user);
+    await this.assertActor(user.sub);
     return this.db.transaction(async (tx) => {
       const previous = await this.latestInTx(tx, forecastId);
       if (!previous) {
         throw new NotFoundException(`Forecast ${forecastId} not found`);
       }
+      assertForecastPublisher(user, previous.buyerId);
 
       const partId = input.partId ?? previous.partId;
       const shipToSiteId = input.shipToSiteId ?? previous.shipToSiteId;
@@ -141,7 +147,7 @@ export class ForecastService {
           aggregateType: "forecast_line",
           aggregateId: previous.forecastId,
           aggregateVersion: String(previous.version),
-          actorId,
+          actorId: user.sub,
           payload: {
             forecastId: previous.forecastId,
             version: previous.version,
@@ -171,21 +177,23 @@ export class ForecastService {
           shipToSiteId: ctx.site.id,
           uom: ctx.tpa.uom,
           needByConvention: ctx.tpa.needByConvention,
-          publishedBy: actorId,
+          publishedBy: user.sub,
         })
         .returning();
 
       const line = inserted!;
-      await this.recordPublish(tx, line, actorId, "republish");
+      await this.recordPublish(tx, line, user.sub, "republish");
       return this.serialize(line, ctx);
     });
   }
 
-  async publishDraft(forecastId: string, actorId: string) {
-    await this.assertActor(actorId);
+  async publishDraft(forecastId: string, user: SessionClaims) {
+    assertBuyerSession(user);
+    await this.assertActor(user.sub);
     return this.db.transaction(async (tx) => {
       const latest = await this.latestInTx(tx, forecastId);
       if (!latest) throw new NotFoundException(`Forecast ${forecastId} not found`);
+      assertForecastPublisher(user, latest.buyerId);
       if (latest.status !== "draft") {
         throw new ConflictException(`${forecastId} v${latest.version} is ${latest.status}, not draft`);
       }
@@ -195,12 +203,12 @@ export class ForecastService {
         .set({
           status: "published",
           publishedAt: now,
-          publishedBy: actorId,
+          publishedBy: user.sub,
         })
         .where(eq(forecastLines.id, latest.id))
         .returning();
       const line = updated!;
-      await this.recordPublish(tx, line, actorId, "publish_draft");
+      await this.recordPublish(tx, line, user.sub, "publish_draft");
       return line;
     });
   }

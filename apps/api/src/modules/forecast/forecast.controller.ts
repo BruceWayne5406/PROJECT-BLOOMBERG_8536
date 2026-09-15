@@ -1,7 +1,8 @@
 import { Body, Controller, Get, Inject, Param, Post } from "@nestjs/common";
 import { publishForecastSchema, republishForecastSchema } from "@scp/domain";
-import { ActorId } from "../../common/actor";
+import { CurrentUser } from "../../common/current-user";
 import { ZodPipe } from "../../common/zod.pipe";
+import type { SessionClaims } from "../auth/token";
 import { ForecastService } from "./forecast.service";
 import type { PublishForecastInput, RepublishForecastInput } from "@scp/domain";
 
@@ -22,22 +23,22 @@ export class ForecastController {
   @Post()
   publish(
     @Body(new ZodPipe(publishForecastSchema)) body: PublishForecastInput,
-    @ActorId() actorId: string,
+    @CurrentUser() user: SessionClaims,
   ) {
-    return this.forecasts.publish(body, actorId);
+    return this.forecasts.publish(body, user);
   }
 
   @Post(":forecastId/versions")
   republish(
     @Param("forecastId") forecastId: string,
     @Body(new ZodPipe(republishForecastSchema)) body: RepublishForecastInput,
-    @ActorId() actorId: string,
+    @CurrentUser() user: SessionClaims,
   ) {
-    return this.forecasts.republish(forecastId.toUpperCase(), body, actorId);
+    return this.forecasts.republish(forecastId.toUpperCase(), body, user);
   }
 
   @Post(":forecastId/publish")
-  publishDraft(@Param("forecastId") forecastId: string, @ActorId() actorId: string) {
-    return this.forecasts.publishDraft(forecastId.toUpperCase(), actorId);
+  publishDraft(@Param("forecastId") forecastId: string, @CurrentUser() user: SessionClaims) {
+    return this.forecasts.publishDraft(forecastId.toUpperCase(), user);
   }
 }
