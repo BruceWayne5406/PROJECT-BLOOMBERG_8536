@@ -23,6 +23,7 @@ import { toIso } from "../../common/dates";
 import { DbService } from "../../db/db.service";
 import type { SessionClaims } from "../auth/token";
 import { WritebackService } from "../erp-writeback/erp-writeback.service";
+import { resolveAcceptedChangeOrderPromise } from "./change-order-promise";
 
 type PoRow = typeof purchaseOrders.$inferSelect;
 type CoRow = typeof changeOrders.$inferSelect;
@@ -167,8 +168,20 @@ export class ChangeOrderService {
         })
         .returning();
 
-      const promiseQty = accepted!.proposedQty ?? po.firmQty;
-      const promiseDate = accepted!.proposedDate ?? po.firmDate;
+      const [latestAck] = await this.db
+        .select()
+        .from(poAcknowledgements)
+        .where(eq(poAcknowledgements.purchaseOrderId, po.id))
+        .orderBy(desc(poAcknowledgements.acknowledgedAt))
+        .limit(1);
+      const { promiseQty, promiseDate } = resolveAcceptedChangeOrderPromise({
+        proposedQty: accepted!.proposedQty,
+        proposedDate: accepted!.proposedDate,
+        lastPromiseQty: latestAck?.promiseQty ?? null,
+        lastPromiseDate: latestAck?.promiseDate ?? null,
+        firmQty: po.firmQty,
+        firmDate: po.firmDate,
+      });
       await this.db.insert(poAcknowledgements).values({
         purchaseOrderId: po.id,
         ackStatus: "date_change",
