@@ -27,6 +27,7 @@ import { desc, eq } from "drizzle-orm";
 import { DbService } from "../../db/db.service";
 import type { SessionClaims } from "../auth/token";
 import { toIso } from "../../common/dates";
+import { suggestCommitGrade } from "./commit-grade";
 
 type CommitRow = typeof forecastCommits.$inferSelect;
 type ForecastRow = typeof forecastLines.$inferSelect;
@@ -478,13 +479,7 @@ export class CommitService {
     bands: (typeof flexibilityBands.$inferSelect)[],
     needBy: string,
   ): CommitGrade {
-    const weeks = this.weeksTo(needBy);
-    const match = bands.find((b) => {
-      const min = b.weeksToNeedByMin ?? Number.NEGATIVE_INFINITY;
-      const max = b.weeksToNeedByMax ?? Number.POSITIVE_INFINITY;
-      return weeks >= min && weeks <= max;
-    });
-    return match?.commitGrade ?? "planning";
+    return suggestCommitGrade(bands, needBy);
   }
 
   private insideFirmFence(tpa: TpaRow, needBy: string) {
