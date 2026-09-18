@@ -1,0 +1,21 @@
+{
+  "name": "scp",
+  "private": true,
+  "description": "Semiconductor supplier–buyer commitment platform — collaboration + audit layer",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w @scp/api",
+    "dev:web": "npm run dev -w @scp/web",
+    "db:generate": "npm run generate -w @scp/db",
+    "db:migrate": "npm run migrate -w @scp/db",
+    "db:seed": "npm run seed -w @scp/db",
+    "db:reset": "npm run reset -w @scp/db",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
