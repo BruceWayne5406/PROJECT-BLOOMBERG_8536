@@ -148,19 +148,34 @@ export const commitSplitInputSchema = z
   })
   .refine((row) => Number(row.committedQty) > 0 || Boolean(row.reasonCode), {
     message: "A zero-qty remainder needs a reason_code",
-  });
+  })
+  .refine(
+    (row) =>
+      row.commitGrade !== "firming" && row.commitGrade !== "frozen"
+        ? true
+        : Boolean(row.committedDate),
+    { message: "Firming/frozen commits need a committed_date to be binding" },
+  );
 
 export const offerSplitsSchema = z.object({
   splits: z.array(commitSplitInputSchema).min(1),
 });
 
-export const supersedeCommitSchema = z.object({
-  committedQty: qtyNonNeg,
-  committedDate: isoDate.nullable().optional(),
-  commitGrade: z.enum(COMMIT_GRADES).nullable().optional(),
-  reasonCode: z.enum(REASON_CODES).nullable().optional(),
-  comment: z.string().nullable().optional(),
-});
+export const supersedeCommitSchema = z
+  .object({
+    committedQty: qtyNonNeg,
+    committedDate: isoDate.nullable().optional(),
+    commitGrade: z.enum(COMMIT_GRADES).nullable().optional(),
+    reasonCode: z.enum(REASON_CODES).nullable().optional(),
+    comment: z.string().nullable().optional(),
+  })
+  .refine(
+    (row) =>
+      row.commitGrade !== "firming" && row.commitGrade !== "frozen"
+        ? true
+        : Boolean(row.committedDate),
+    { message: "Firming/frozen commits need a committed_date to be binding" },
+  );
 
 export const decideCommitSchema = z.object({
   decision: z.enum(["accepted", "rejected"]),
