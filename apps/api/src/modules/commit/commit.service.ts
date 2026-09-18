@@ -27,6 +27,7 @@ import { desc, eq } from "drizzle-orm";
 import { DbService } from "../../db/db.service";
 import type { SessionClaims } from "../auth/token";
 import { toIso } from "../../common/dates";
+import { resolveOfferedGrade } from "./commit-date-grade";
 
 type CommitRow = typeof forecastCommits.$inferSelect;
 type ForecastRow = typeof forecastLines.$inferSelect;
@@ -96,9 +97,12 @@ export class CommitService {
         const version = prior ? prior.version + 1 : 1;
         const qty = split.committedQty;
         const date = split.committedDate ?? null;
-        const grade =
-          split.commitGrade ??
-          (Number(qty) > 0 ? this.suggestGrade(bands, date ?? line.requestedDate) : null);
+        const grade = resolveOfferedGrade(
+          split.commitGrade,
+          Number(qty),
+          date,
+          (needBy) => this.suggestGrade(bands, needBy),
+        );
 
         const [row] = await tx
           .insert(forecastCommits)
@@ -153,11 +157,12 @@ export class CommitService {
     }
 
     const bands = await this.bands(tpa.id);
-    const grade =
-      input.commitGrade ??
-      (Number(input.committedQty) > 0
-        ? this.suggestGrade(bands, input.committedDate ?? line.requestedDate)
-        : null);
+    const grade = resolveOfferedGrade(
+      input.commitGrade,
+      Number(input.committedQty),
+      input.committedDate ?? null,
+      (needBy) => this.suggestGrade(bands, needBy),
+    );
 
     return this.db.transaction(async (tx) => {
       await tx
