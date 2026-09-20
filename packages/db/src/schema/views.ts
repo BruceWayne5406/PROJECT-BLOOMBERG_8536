@@ -66,7 +66,7 @@ export const forecastLineMetrics = pgView("forecast_line_metrics", {
   gapReasonCode: text("gap_reason_code"),
 }).existing();
 
-/** OTIF is measured against promise_date, never the original request date. */
+/** OTIF vs last accepted promise (ack, else PO firm date) — never the forecast request. */
 export const otifMetrics = pgView("otif_metrics", {
   purchaseOrderId: uuid("purchase_order_id").notNull(),
   poNumber: text("po_number").notNull(),

@@ -5,7 +5,6 @@ import {
   executionEvents,
   forecastCommits,
   forecastLines,
-  otifMetrics,
   poAcknowledgements,
   purchaseOrders,
   tradingPartnerSetups,
@@ -17,6 +16,7 @@ import { addBusinessDays, toIso } from "../../common/dates";
 import { DbService } from "../../db/db.service";
 import { auditEvents, domainEvents } from "@scp/db";
 import type { SessionClaims } from "../auth/token";
+import { resolveBindingPromise, resolveOtif } from "../purchase-order/otif";
 
 const SYSTEM = "system.scp";
 const ACTIVE = ["offered", "accepted"] as const;
@@ -387,9 +387,6 @@ export class ExceptionService {
           .from(executionEvents)
           .where(inArray(executionEvents.purchaseOrderId, poIds))
       : [];
-    const otif = poIds.length
-      ? await this.db.select().from(otifMetrics).where(inArray(otifMetrics.purchaseOrderId, poIds))
-      : [];
     const cos = poIds.length
       ? await this.db
           .select()
@@ -445,7 +442,12 @@ export class ExceptionService {
               const bt = b.acknowledgedAt instanceof Date ? b.acknowledgedAt : new Date(b.acknowledgedAt);
               return bt.getTime() - at.getTime();
             })[0];
-          const metric = otif.find((o) => o.purchaseOrderId === p.id);
+          const poAcks = acks.filter((a) => a.purchaseOrderId === p.id);
+          const promise = resolveBindingPromise(p, poAcks);
+          const metric = resolveOtif(
+            promise.promiseDate,
+            ships.filter((s) => s.purchaseOrderId === p.id),
+          );
           return {
             id: p.id,
             poNumber: p.poNumber,

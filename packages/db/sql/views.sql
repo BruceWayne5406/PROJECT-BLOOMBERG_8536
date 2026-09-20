@@ -68,20 +68,22 @@ GROUP BY
   prev.requested_qty,
   prev.requested_date;
 
--- OTIF is measured against the supplier's promise_date, never the original request date.
+-- OTIF is measured against the last accepted promise, never the original
+-- forecast request. Until an 855/CO ack exists, that promise is the PO firm
+-- qty/date copied from the converted commit. Rejected acks are not promises.
 CREATE OR REPLACE VIEW otif_metrics AS
 SELECT
   po.id AS purchase_order_id,
   po.po_number,
   po.line,
   po.schedule_line,
-  ack.promise_date,
-  ack.promise_qty,
+  COALESCE(ack.promise_date, po.firm_date) AS promise_date,
+  COALESCE(ack.promise_qty, po.firm_qty) AS promise_qty,
   rec.occurred_at::date AS receipt_date,
   rec.qty AS received_qty,
   CASE
     WHEN rec.id IS NULL THEN NULL
-    WHEN rec.occurred_at::date <= ack.promise_date THEN true
+    WHEN rec.occurred_at::date <= COALESCE(ack.promise_date, po.firm_date) THEN true
     ELSE false
   END AS otif
 FROM purchase_orders po
@@ -89,6 +91,7 @@ LEFT JOIN LATERAL (
   SELECT *
   FROM po_acknowledgements a
   WHERE a.purchase_order_id = po.id
+    AND a.ack_status IS DISTINCT FROM 'rejected'
   ORDER BY a.acknowledged_at DESC
   LIMIT 1
 ) ack ON true

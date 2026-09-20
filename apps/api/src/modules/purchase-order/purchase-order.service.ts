@@ -13,7 +13,6 @@ import {
   executionEvents,
   forecastCommits,
   forecastLines,
-  otifMetrics,
   poAcknowledgements,
   purchaseOrders,
 } from "@scp/db";
@@ -28,6 +27,7 @@ import { toIso } from "../../common/dates";
 import { DbService } from "../../db/db.service";
 import type { SessionClaims } from "../auth/token";
 import { WritebackService } from "../erp-writeback/erp-writeback.service";
+import { resolveBindingPromise, resolveOtif } from "./otif";
 
 type CommitRow = typeof forecastCommits.$inferSelect;
 type LineRow = typeof forecastLines.$inferSelect;
@@ -251,10 +251,8 @@ export class PurchaseOrderService {
       .select()
       .from(executionEvents)
       .where(eq(executionEvents.purchaseOrderId, po.id));
-    const [metric] = await this.db
-      .select()
-      .from(otifMetrics)
-      .where(eq(otifMetrics.purchaseOrderId, po.id));
+    const promise = resolveBindingPromise(po, acks);
+    const otif = resolveOtif(promise.promiseDate, events);
     const [commit] = await this.db
       .select()
       .from(forecastCommits)
@@ -313,13 +311,13 @@ export class PurchaseOrderService {
         qty: e.qty,
         occurredAt: toIso(e.occurredAt),
       })),
-      otif: metric
+      otif: otif
         ? {
-            promiseDate: metric.promiseDate,
-            promiseQty: metric.promiseQty,
-            receiptDate: metric.receiptDate,
-            receivedQty: metric.receivedQty,
-            otif: metric.otif,
+            promiseDate: promise.promiseDate,
+            promiseQty: promise.promiseQty,
+            receiptDate: otif.receiptDate,
+            receivedQty: otif.receivedQty,
+            otif: otif.otif,
           }
         : null,
     };
