@@ -12,11 +12,12 @@ import {
 } from "@scp/db";
 import type { AcknowledgeExceptionInput, ExceptionType } from "@scp/domain";
 import { DOMAIN_EVENTS } from "@scp/event-contracts";
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { addBusinessDays, toIso } from "../../common/dates";
 import { DbService } from "../../db/db.service";
 import { auditEvents, domainEvents } from "@scp/db";
 import type { SessionClaims } from "../auth/token";
+import { isLineScopedException } from "./exception-scope";
 
 const SYSTEM = "system.scp";
 const ACTIVE = ["offered", "accepted"] as const;
@@ -231,8 +232,8 @@ export class ExceptionService {
     summary: string;
     payload: Record<string, unknown>;
   }) {
-    const existing = await this.findExisting(input.type, input.line.id, input.commitId);
     if (input.needed) {
+      const existing = await this.findExisting(input.type, input.line.id, input.commitId);
       if (!existing) {
         await this.db.insert(exceptions).values({
           exceptionType: input.type,
@@ -283,6 +284,7 @@ export class ExceptionService {
             openedAt: new Date(),
             resolvedAt: null,
             resolvedBy: null,
+            commitId: input.commitId,
             summary: input.summary,
             payload: input.payload,
             dueAt: input.dueAt,
@@ -290,11 +292,13 @@ export class ExceptionService {
             reasonCode: input.reasonCode,
           })
           .where(eq(exceptions.id, existing.id));
-        return { opened: 1, resolved: 0 };
+        const extras = await this.resolveLineScopedSiblings(input.type, input.line.id, existing.id);
+        return { opened: 1, resolved: extras };
       }
       await this.db
         .update(exceptions)
         .set({
+          commitId: input.commitId,
           summary: input.summary,
           payload: input.payload,
           dueAt: input.dueAt,
@@ -302,24 +306,21 @@ export class ExceptionService {
           reasonCode: input.reasonCode,
         })
         .where(eq(exceptions.id, existing.id));
-      return { opened: 0, resolved: 0 };
+      const extras = await this.resolveLineScopedSiblings(input.type, input.line.id, existing.id);
+      return { opened: 0, resolved: extras };
     }
-    if (existing && existing.status !== "resolved") {
-      await this.db
-        .update(exceptions)
-        .set({
-          status: "resolved",
-          resolvedAt: new Date(),
-          resolvedBy: SYSTEM,
-          summary: input.summary,
-        })
-        .where(eq(exceptions.id, existing.id));
-      return { opened: 0, resolved: 1 };
-    }
-    return { opened: 0, resolved: 0 };
+    const resolved = await this.resolveLineScoped(input.type, input.line.id, input.commitId, input.summary);
+    return { opened: 0, resolved };
   }
 
   private async findExisting(type: ExceptionType, lineId: string, commitId: string | null) {
+    if (isLineScopedException(type)) {
+      const rows = await this.db
+        .select()
+        .from(exceptions)
+        .where(and(eq(exceptions.exceptionType, type), eq(exceptions.forecastLineId, lineId)));
+      return rows.find((r) => r.status !== "resolved") ?? rows[0] ?? null;
+    }
     if (commitId) {
       const [row] = await this.db
         .select()
@@ -344,6 +345,75 @@ export class ExceptionService {
         ),
       );
     return row ?? null;
+  }
+
+  private async resolveLineScoped(
+    type: ExceptionType,
+    lineId: string,
+    commitId: string | null,
+    summary: string,
+  ) {
+    const rows = isLineScopedException(type)
+      ? await this.db
+          .select()
+          .from(exceptions)
+          .where(and(eq(exceptions.exceptionType, type), eq(exceptions.forecastLineId, lineId)))
+      : commitId
+        ? await this.db
+            .select()
+            .from(exceptions)
+            .where(
+              and(
+                eq(exceptions.exceptionType, type),
+                eq(exceptions.forecastLineId, lineId),
+                eq(exceptions.commitId, commitId),
+              ),
+            )
+        : [];
+    let resolved = 0;
+    for (const row of rows) {
+      if (row.status === "resolved") continue;
+      await this.db
+        .update(exceptions)
+        .set({
+          status: "resolved",
+          resolvedAt: new Date(),
+          resolvedBy: SYSTEM,
+          summary,
+        })
+        .where(eq(exceptions.id, row.id));
+      resolved += 1;
+    }
+    return resolved;
+  }
+
+  private async resolveLineScopedSiblings(type: ExceptionType, lineId: string, keepId: string) {
+    if (!isLineScopedException(type)) return 0;
+    const rows = await this.db
+      .select()
+      .from(exceptions)
+      .where(
+        and(
+          eq(exceptions.exceptionType, type),
+          eq(exceptions.forecastLineId, lineId),
+          ne(exceptions.id, keepId),
+        ),
+      );
+    let resolved = 0;
+    for (const row of rows) {
+      if (row.status === "resolved") continue;
+      await this.db
+        .update(exceptions)
+        .set({
+          status: "resolved",
+          resolvedAt: new Date(),
+          resolvedBy: SYSTEM,
+          summary: row.summary,
+        })
+        .where(eq(exceptions.id, row.id));
+      resolved += 1;
+    }
+    return resolved;
   }
 
   private async serialize(row: ExceptionRow) {
