@@ -27,6 +27,7 @@ import { desc, eq } from "drizzle-orm";
 import { toIso } from "../../common/dates";
 import { DbService } from "../../db/db.service";
 import type { SessionClaims } from "../auth/token";
+import { unpublishedLineBlocker } from "../commit/published-line";
 import { WritebackService } from "../erp-writeback/erp-writeback.service";
 
 type CommitRow = typeof forecastCommits.$inferSelect;
@@ -91,6 +92,8 @@ export class PurchaseOrderService {
       .where(eq(forecastLines.id, latest.parentForecastLineId));
     if (!line) throw new NotFoundException("Parent forecast line missing");
     this.assertBuyer(user, line);
+    const stale = unpublishedLineBlocker(line, "convert to a PO");
+    if (stale) throw new ConflictException(stale);
 
     if (line.demandType === "upside") {
       // Explicit convert is the allocation decision — never implicit from a planning accept.

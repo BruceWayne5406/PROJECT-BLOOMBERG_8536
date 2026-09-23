@@ -201,7 +201,11 @@ export function ForecastDetailView({ forecastId }: { forecastId: string }) {
       {current.status === "draft" ? (
         <PublishDraftButton
           forecastId={current.forecastId}
-          onDone={() => queryClient.invalidateQueries({ queryKey: ["forecast", forecastId] })}
+          onDone={() => {
+            queryClient.invalidateQueries({ queryKey: ["forecast", forecastId] });
+            queryClient.invalidateQueries({ queryKey: ["commits", forecastId] });
+            queryClient.invalidateQueries({ queryKey: ["commits-inbox"] });
+          }}
         />
       ) : (
         <RepublishForm
@@ -210,6 +214,8 @@ export function ForecastDetailView({ forecastId }: { forecastId: string }) {
           onDone={() => {
             queryClient.invalidateQueries({ queryKey: ["forecast", forecastId] });
             queryClient.invalidateQueries({ queryKey: ["forecasts"] });
+            queryClient.invalidateQueries({ queryKey: ["commits", forecastId] });
+            queryClient.invalidateQueries({ queryKey: ["commits-inbox"] });
           }}
         />
       )}

@@ -27,6 +27,7 @@ import { desc, eq } from "drizzle-orm";
 import { DbService } from "../../db/db.service";
 import type { SessionClaims } from "../auth/token";
 import { toIso } from "../../common/dates";
+import { unpublishedLineBlocker } from "./published-line";
 
 type CommitRow = typeof forecastCommits.$inferSelect;
 type ForecastRow = typeof forecastLines.$inferSelect;
@@ -143,6 +144,8 @@ export class CommitService {
       .where(eq(forecastLines.id, latest.parentForecastLineId));
     if (!line) throw new NotFoundException("Parent forecast line missing");
     this.assertSupplier(user, line);
+    const stale = unpublishedLineBlocker(line, "supersede");
+    if (stale) throw new ConflictException(stale);
 
     const tpa = await this.tpa(line.tradingPartnerSetupId);
     const insideFirm = this.insideFirmFence(tpa, line.requestedDate);
@@ -225,6 +228,8 @@ export class CommitService {
       .where(eq(forecastLines.id, latest.parentForecastLineId));
     if (!line) throw new NotFoundException("Parent forecast line missing");
     this.assertBuyer(user, line);
+    const stale = unpublishedLineBlocker(line, input.decision === "accepted" ? "accept" : "reject");
+    if (stale) throw new ConflictException(stale);
 
     if (input.decision === "accepted" && line.demandType === "upside") {
       // Explicit decision is required — accepting upside is allowed, but never implicit.
