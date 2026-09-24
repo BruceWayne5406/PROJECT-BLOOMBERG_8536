@@ -10,6 +10,7 @@ import { DbService } from "../../db/db.service";
 import type { SessionClaims } from "../auth/token";
 import { CommitService } from "../commit/commit.service";
 import { ForecastService } from "../forecast/forecast.service";
+import { mergeExcelCommitSplits } from "./merge-commit-splits";
 
 type RowError = { sheet: string; row: number; message: string };
 
@@ -88,7 +89,22 @@ export class ExcelImportService {
           if (user.partyType !== "supplier") {
             throw new Error("Only the supplying partner can import commit rows");
           }
-          const parsed = offerSplitsSchema.parse({ splits: rows.map((r) => r.split) });
+          const current = await this.commits.forForecast(forecastId);
+          const offered = current.splits
+            .filter((s) => s.status === "offered")
+            .map((s) => ({
+              commitId: s.commitId,
+              committedQty: s.committedQty,
+              committedDate: s.committedDate,
+              commitGrade: s.commitGrade,
+              reasonCode: s.reasonCode,
+              comment: s.comment,
+            }));
+          const merged = mergeExcelCommitSplits(
+            offered,
+            rows.map((r) => r.split),
+          );
+          const parsed = offerSplitsSchema.parse({ splits: merged });
           await this.commits.offer(forecastId, parsed, user);
           for (const row of rows) {
             accepted.push({

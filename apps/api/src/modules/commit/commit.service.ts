@@ -27,6 +27,7 @@ import { desc, eq } from "drizzle-orm";
 import { DbService } from "../../db/db.service";
 import type { SessionClaims } from "../auth/token";
 import { toIso } from "../../common/dates";
+import { offerRepeatsAcceptedSplit } from "./offer-overlap";
 
 type CommitRow = typeof forecastCommits.$inferSelect;
 type ForecastRow = typeof forecastLines.$inferSelect;
@@ -70,6 +71,17 @@ export class CommitService {
       const existing = await this.currentInTx(tx, line.id);
       const accepted = existing.filter((c) => c.status === "accepted" && Number(c.committedQty) > 0);
       const replaceable = existing.filter((c) => c.status === "offered");
+      if (
+        offerRepeatsAcceptedSplit({
+          accepted,
+          incoming: input.splits,
+          replaceableIds: replaceable.map((c) => c.commitId),
+        })
+      ) {
+        throw new BadRequestException(
+          "This offer repeats an already-accepted split. Accepted slices stay; send only the remaining offered rows.",
+        );
+      }
 
       for (const row of replaceable) {
         await tx

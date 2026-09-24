@@ -21,6 +21,7 @@ type Me = {
 };
 
 type DraftSplit = {
+  commitId?: string;
   committedQty: string;
   committedDate: string;
   commitGrade: string;
@@ -304,6 +305,10 @@ export function CommitPanel({ forecastId }: { forecastId: string }) {
 
       {isSupplier ? (
         <OfferSplitsForm
+          key={data.splits
+            .filter((s) => s.status === "offered")
+            .map((s) => `${s.commitId}:${s.version}`)
+            .join("|")}
           forecastId={forecastId}
           seed={data.splits.filter((s) => s.status === "offered")}
           onDone={refresh}
@@ -474,6 +479,7 @@ function OfferSplitsForm({
     () =>
       seed.length
         ? seed.map((s) => ({
+            commitId: s.commitId,
             committedQty: String(Number(s.committedQty)),
             committedDate: s.committedDate ?? "",
             commitGrade: s.commitGrade ?? "",
@@ -499,6 +505,7 @@ function OfferSplitsForm({
         method: "POST",
         body: JSON.stringify({
           splits: splits.map((s) => ({
+            commitId: s.commitId || undefined,
             committedQty: s.committedQty || "0",
             committedDate: s.committedDate || null,
             commitGrade: s.commitGrade || null,
