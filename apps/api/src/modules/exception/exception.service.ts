@@ -17,6 +17,7 @@ import { addBusinessDays, toIso } from "../../common/dates";
 import { DbService } from "../../db/db.service";
 import { auditEvents, domainEvents } from "@scp/db";
 import type { SessionClaims } from "../auth/token";
+import { isCurrentExceptionLine } from "./exception-line-current";
 
 const SYSTEM = "system.scp";
 const ACTIVE = ["offered", "accepted"] as const;
@@ -77,9 +78,9 @@ export class ExceptionService {
   }
 
   async scan() {
-    const published = (await this.db.select().from(forecastLines)).filter(
-      (l) => l.status === "published",
-    );
+    const lines = await this.db.select().from(forecastLines);
+    const byId = new Map(lines.map((l) => [l.id, l]));
+    const published = lines.filter((l) => l.status === "published");
     let opened = 0;
     let resolved = 0;
     for (const line of published) {
@@ -87,7 +88,42 @@ export class ExceptionService {
       opened += result.opened;
       resolved += result.resolved;
     }
+    resolved += await this.resolveOrphansOnSupersededLines(byId);
     return { scanned: published.length, opened, resolved };
+  }
+
+  private async resolveOrphansOnSupersededLines(lines: Map<string, LineRow>) {
+    const rows = await this.db.select().from(exceptions);
+    let resolved = 0;
+    for (const row of rows) {
+      if (row.status === "resolved") continue;
+      const line = lines.get(row.forecastLineId);
+      if (isCurrentExceptionLine(line?.status)) continue;
+      await this.db
+        .update(exceptions)
+        .set({
+          status: "resolved",
+          resolvedAt: new Date(),
+          resolvedBy: SYSTEM,
+          summary: `${row.forecastId} v${row.forecastVersion} was superseded. This ${row.exceptionType} is no longer current demand.`,
+        })
+        .where(eq(exceptions.id, row.id));
+      await this.db.insert(auditEvents).values({
+        actorId: SYSTEM,
+        entityType: "exception",
+        entityId: row.id,
+        action: "resolve",
+        reasonCode: row.reasonCode,
+        payload: {
+          exceptionType: row.exceptionType,
+          forecastId: row.forecastId,
+          forecastVersion: row.forecastVersion,
+          reason: "forecast_line_superseded",
+        },
+      });
+      resolved += 1;
+    }
+    return resolved;
   }
 
   private async scanLine(line: LineRow) {
