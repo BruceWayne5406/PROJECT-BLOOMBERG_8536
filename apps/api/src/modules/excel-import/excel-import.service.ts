@@ -1,15 +1,17 @@
 import { BadRequestException, Inject, Injectable } from "@nestjs/common";
-import { parts, sites, tradingPartnerSetups } from "@scp/db";
+import { forecastLines, parts, sites, tradingPartnerSetups } from "@scp/db";
 import {
   DEMAND_TYPES,
   offerSplitsSchema,
   publishForecastSchema,
+  republishForecastSchema,
 } from "@scp/domain";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { DbService } from "../../db/db.service";
 import type { SessionClaims } from "../auth/token";
 import { CommitService } from "../commit/commit.service";
 import { ForecastService } from "../forecast/forecast.service";
+import { resolveExcelForecastWrite } from "./excel-forecast-write";
 
 type RowError = { sheet: string; row: number; message: string };
 
@@ -141,11 +143,14 @@ export class ExcelImportService {
         throw new Error(`demand_type ${demandType} is not a known value`);
       }
 
-      let tradingPartnerSetupId = cell("trading_partner_setup_id");
+      const forecastId = cell("forecast_id") ? cell("forecast_id").toUpperCase() : undefined;
+      const existing = forecastId ? await this.latestForecast(forecastId) : null;
+      const write = resolveExcelForecastWrite(forecastId, existing, user.partnerId);
+      if (write.mode === "reject") throw new Error(write.message);
+
       let partId = cell("part_id");
       let shipToSiteId = cell("ship_to_site_id");
       const buyerPart = cell("buyer_part_number");
-
       if (!partId && buyerPart) {
         const matches = (await this.db.select().from(parts)).filter(
           (p) => p.buyerPartNumber === buyerPart && p.buyerId === user.partnerId,
@@ -157,6 +162,23 @@ export class ExcelImportService {
         }
         partId = matches[0]!.id;
       }
+
+      if (write.mode === "republish") {
+        const parsed = republishForecastSchema.parse({
+          requestedQty,
+          requestedDate,
+          demandType,
+          priority: cell("priority") ? Number(cell("priority")) : undefined,
+          program: cell("program") || null,
+          partId: partId || undefined,
+          shipToSiteId: shipToSiteId || undefined,
+        });
+        const created = await this.forecasts.republish(forecastId!, parsed, user.sub);
+        accepted.push({ sheet: "forecasts", row: rowNumber, id: created.forecastId });
+        return;
+      }
+
+      let tradingPartnerSetupId = cell("trading_partner_setup_id");
       if (!tradingPartnerSetupId && partId) {
         const [part] = (await this.db.select().from(parts)).filter((p) => p.id === partId);
         const tpas = (await this.db.select().from(tradingPartnerSetups)).filter(
@@ -178,7 +200,7 @@ export class ExcelImportService {
       }
 
       const parsed = publishForecastSchema.parse({
-        forecastId: cell("forecast_id") || undefined,
+        forecastId,
         tradingPartnerSetupId,
         partId,
         shipToSiteId,
@@ -197,6 +219,16 @@ export class ExcelImportService {
         message: err instanceof Error ? err.message : String(err),
       });
     }
+  }
+
+  private async latestForecast(forecastId: string) {
+    const [row] = await this.db
+      .select()
+      .from(forecastLines)
+      .where(eq(forecastLines.forecastId, forecastId))
+      .orderBy(desc(forecastLines.version))
+      .limit(1);
+    return row ?? null;
   }
 
 }
