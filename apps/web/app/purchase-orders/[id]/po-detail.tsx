@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ACK_STATUSES, REASON_CODES } from "@scp/domain";
+import { ACK_STATUSES, REASON_CODES, resolveAckFormSeed } from "@scp/domain";
 import { useState } from "react";
 import { api, type PurchaseOrderRecord } from "@/lib/api";
 import { formatDate, formatQty } from "@/lib/format";
@@ -90,7 +90,14 @@ export function PurchaseOrderDetail({ id }: { id: string }) {
             ))}
           </ul>
         )}
-        {isSupplier ? <AckForm id={id} seed={data} onDone={refresh} /> : null}
+        {isSupplier ? (
+          <AckForm
+            key={ackFormKey(data)}
+            id={id}
+            seed={data}
+            onDone={refresh}
+          />
+        ) : null}
       </section>
 
       <section className="panel">
@@ -115,6 +122,15 @@ export function PurchaseOrderDetail({ id }: { id: string }) {
   );
 }
 
+function ackFormKey(seed: PurchaseOrderRecord) {
+  const promise = resolveAckFormSeed({
+    firmQty: seed.firmQty,
+    firmDate: seed.firmDate,
+    acknowledgements: seed.acknowledgements,
+  });
+  return `${promise.promiseQty}:${promise.promiseDate}`;
+}
+
 function AckForm({
   id,
   seed,
@@ -124,9 +140,14 @@ function AckForm({
   seed: PurchaseOrderRecord;
   onDone: () => void;
 }) {
+  const promise = resolveAckFormSeed({
+    firmQty: seed.firmQty,
+    firmDate: seed.firmDate,
+    acknowledgements: seed.acknowledgements,
+  });
   const [ackStatus, setAckStatus] = useState<(typeof ACK_STATUSES)[number]>("accepted");
-  const [promiseQty, setPromiseQty] = useState(String(Number(seed.firmQty)));
-  const [promiseDate, setPromiseDate] = useState(seed.firmDate);
+  const [promiseQty, setPromiseQty] = useState(promise.promiseQty);
+  const [promiseDate, setPromiseDate] = useState(promise.promiseDate);
   const [changeReason, setChangeReason] = useState("");
   const mutation = useMutation({
     mutationFn: () =>
