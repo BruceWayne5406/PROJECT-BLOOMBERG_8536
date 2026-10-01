@@ -5,7 +5,6 @@ import {
   executionEvents,
   forecastCommits,
   forecastLines,
-  otifMetrics,
   poAcknowledgements,
   purchaseOrders,
   tradingPartnerSetups,
@@ -17,6 +16,7 @@ import { addBusinessDays, toIso } from "../../common/dates";
 import { DbService } from "../../db/db.service";
 import { auditEvents, domainEvents } from "@scp/db";
 import type { SessionClaims } from "../auth/token";
+import { computeOtifFulfillment } from "../purchase-order/otif-fulfillment";
 
 const SYSTEM = "system.scp";
 const ACTIVE = ["offered", "accepted"] as const;
@@ -387,9 +387,6 @@ export class ExceptionService {
           .from(executionEvents)
           .where(inArray(executionEvents.purchaseOrderId, poIds))
       : [];
-    const otif = poIds.length
-      ? await this.db.select().from(otifMetrics).where(inArray(otifMetrics.purchaseOrderId, poIds))
-      : [];
     const cos = poIds.length
       ? await this.db
           .select()
@@ -445,7 +442,13 @@ export class ExceptionService {
               const bt = b.acknowledgedAt instanceof Date ? b.acknowledgedAt : new Date(b.acknowledgedAt);
               return bt.getTime() - at.getTime();
             })[0];
-          const metric = otif.find((o) => o.purchaseOrderId === p.id);
+          const fulfillment = computeOtifFulfillment(
+            {
+              promiseDate: latestAck?.promiseDate ?? null,
+              promiseQty: latestAck?.promiseQty ?? null,
+            },
+            ships.filter((s) => s.purchaseOrderId === p.id),
+          );
           return {
             id: p.id,
             poNumber: p.poNumber,
@@ -457,9 +460,9 @@ export class ExceptionService {
             ackStatus: latestAck?.ackStatus ?? null,
             promiseDate: latestAck?.promiseDate ?? null,
             promiseQty: latestAck?.promiseQty ?? null,
-            otif: metric?.otif ?? null,
-            receivedQty: metric?.receivedQty ?? null,
-            receiptDate: metric?.receiptDate ?? null,
+            otif: fulfillment.otif,
+            receivedQty: fulfillment.receivedQty,
+            receiptDate: fulfillment.receiptDate,
           };
         }),
         changeOrders: cos.map((c) => ({

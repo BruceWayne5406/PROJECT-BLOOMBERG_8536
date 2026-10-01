@@ -68,7 +68,9 @@ GROUP BY
   prev.requested_qty,
   prev.requested_date;
 
--- OTIF is measured against the supplier's promise_date, never the original request date.
+-- OTIF is On Time In Full against the supplier's promise, never the original
+-- request date. Receipt qty is cumulative; a later event must not drop earlier
+-- splits or mark a PO late after it was already fulfilled on time.
 CREATE OR REPLACE VIEW otif_metrics AS
 SELECT
   po.id AS purchase_order_id,
@@ -77,11 +79,12 @@ SELECT
   po.schedule_line,
   ack.promise_date,
   ack.promise_qty,
-  rec.occurred_at::date AS receipt_date,
-  rec.qty AS received_qty,
+  rec.receipt_date,
+  rec.received_qty,
   CASE
-    WHEN rec.id IS NULL THEN NULL
-    WHEN rec.occurred_at::date <= ack.promise_date THEN true
+    WHEN rec.receipt_count = 0 THEN NULL
+    WHEN ack.promise_date IS NULL THEN false
+    WHEN rec.on_time_qty >= ack.promise_qty::numeric THEN true
     ELSE false
   END AS otif
 FROM purchase_orders po
@@ -93,11 +96,22 @@ LEFT JOIN LATERAL (
   LIMIT 1
 ) ack ON true
 LEFT JOIN LATERAL (
-  SELECT *
+  SELECT
+    MAX(e.occurred_at)::date AS receipt_date,
+    CASE
+      WHEN COUNT(*) = 0 THEN NULL
+      ELSE COALESCE(SUM(e.qty::numeric), 0)
+    END AS received_qty,
+    COUNT(*)::int AS receipt_count,
+    COALESCE(
+      SUM(e.qty::numeric) FILTER (
+        WHERE ack.promise_date IS NOT NULL
+          AND e.occurred_at::date <= ack.promise_date
+      ),
+      0
+    ) AS on_time_qty
   FROM execution_events e
   WHERE e.purchase_order_id = po.id AND e.event_type = 'receipt'
-  ORDER BY e.occurred_at DESC
-  LIMIT 1
 ) rec ON true;
 
 CREATE OR REPLACE FUNCTION scp_prevent_collaboration_mutation()
