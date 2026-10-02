@@ -17,6 +17,7 @@ import { addBusinessDays, toIso } from "../../common/dates";
 import { DbService } from "../../db/db.service";
 import { auditEvents, domainEvents } from "@scp/db";
 import type { SessionClaims } from "../auth/token";
+import { latestBindingAck } from "../purchase-order/binding-promise";
 
 const SYSTEM = "system.scp";
 const ACTIVE = ["offered", "accepted"] as const;
@@ -438,13 +439,9 @@ export class ExceptionService {
         })),
         gapQty: line ? (Number(line.requestedQty) - committedQty).toFixed(4) : null,
         purchaseOrders: pos.map((p) => {
-          const latestAck = acks
-            .filter((a) => a.purchaseOrderId === p.id)
-            .sort((a, b) => {
-              const at = a.acknowledgedAt instanceof Date ? a.acknowledgedAt : new Date(a.acknowledgedAt);
-              const bt = b.acknowledgedAt instanceof Date ? b.acknowledgedAt : new Date(b.acknowledgedAt);
-              return bt.getTime() - at.getTime();
-            })[0];
+          const latestAck = latestBindingAck(
+            acks.filter((a) => a.purchaseOrderId === p.id),
+          );
           const metric = otif.find((o) => o.purchaseOrderId === p.id);
           return {
             id: p.id,

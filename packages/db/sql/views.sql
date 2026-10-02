@@ -68,7 +68,8 @@ GROUP BY
   prev.requested_qty,
   prev.requested_date;
 
--- OTIF is measured against the supplier's promise_date, never the original request date.
+-- OTIF is measured against the last accepted promise, never the original request
+-- and never a rejected 855 (a refusal is not a schedule).
 CREATE OR REPLACE VIEW otif_metrics AS
 SELECT
   po.id AS purchase_order_id,
@@ -89,6 +90,7 @@ LEFT JOIN LATERAL (
   SELECT *
   FROM po_acknowledgements a
   WHERE a.purchase_order_id = po.id
+    AND a.ack_status <> 'rejected'
   ORDER BY a.acknowledged_at DESC
   LIMIT 1
 ) ack ON true

@@ -28,6 +28,7 @@ import { toIso } from "../../common/dates";
 import { DbService } from "../../db/db.service";
 import type { SessionClaims } from "../auth/token";
 import { WritebackService } from "../erp-writeback/erp-writeback.service";
+import { latestBindingAck } from "./binding-promise";
 
 type CommitRow = typeof forecastCommits.$inferSelect;
 type LineRow = typeof forecastLines.$inferSelect;
@@ -246,7 +247,7 @@ export class PurchaseOrderService {
       .from(poAcknowledgements)
       .where(eq(poAcknowledgements.purchaseOrderId, po.id))
       .orderBy(desc(poAcknowledgements.acknowledgedAt));
-    const latestAck = acks[0] ?? null;
+    const latestAck = latestBindingAck(acks);
     const events = await this.db
       .select()
       .from(executionEvents)
