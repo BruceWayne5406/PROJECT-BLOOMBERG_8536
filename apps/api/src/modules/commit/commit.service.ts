@@ -27,6 +27,7 @@ import { desc, eq } from "drizzle-orm";
 import { DbService } from "../../db/db.service";
 import type { SessionClaims } from "../auth/token";
 import { toIso } from "../../common/dates";
+import { isInsideFirmFence, offerReplaceNeedsReason } from "./firm-fence-offer";
 
 type CommitRow = typeof forecastCommits.$inferSelect;
 type ForecastRow = typeof forecastLines.$inferSelect;
@@ -70,6 +71,18 @@ export class CommitService {
       const existing = await this.currentInTx(tx, line.id);
       const accepted = existing.filter((c) => c.status === "accepted" && Number(c.committedQty) > 0);
       const replaceable = existing.filter((c) => c.status === "offered");
+      const insideFirm = this.insideFirmFence(tpa, line.requestedDate);
+      if (
+        offerReplaceNeedsReason({
+          insideFirmFence: insideFirm,
+          replacingOffered: replaceable.length > 0,
+          splits: input.splits,
+        })
+      ) {
+        throw new BadRequestException(
+          "Inside the firm fence replacing offered splits is a de-commit and requires a reason_code on every split",
+        );
+      }
 
       for (const row of replaceable) {
         await tx
@@ -77,7 +90,7 @@ export class CommitService {
           .set({ status: "superseded" })
           .where(eq(forecastCommits.id, row.id));
         await tx.insert(domainEvents).values({
-          eventName: DOMAIN_EVENTS.CommitSuperseded,
+          eventName: insideFirm ? DOMAIN_EVENTS.DecommitFiled : DOMAIN_EVENTS.CommitSuperseded,
           aggregateType: "forecast_commit",
           aggregateId: row.commitId,
           aggregateVersion: String(row.version),
@@ -119,7 +132,12 @@ export class CommitService {
           })
           .returning();
         inserted.push(row!);
-        await this.recordOffer(tx, row!, user.sub);
+        await this.recordOffer(
+          tx,
+          row!,
+          user.sub,
+          insideFirm && replaceable.length > 0 ? "decommit" : "offer",
+        );
       }
 
       const remaining = this.remainingQty(line, [...accepted, ...inserted]);
@@ -488,12 +506,11 @@ export class CommitService {
   }
 
   private insideFirmFence(tpa: TpaRow, needBy: string) {
-    return this.weeksTo(needBy) < tpa.firmFenceWeeks;
+    return isInsideFirmFence(tpa.firmFenceWeeks, needBy, Date.now());
   }
 
   private weeksTo(isoDate: string) {
-    const ms = Date.parse(`${isoDate}T00:00:00Z`) - Date.now();
-    return ms / 86_400_000 / 7;
+    return (Date.parse(`${isoDate}T00:00:00Z`) - Date.now()) / 86_400_000 / 7;
   }
 
   private assertSupplier(user: SessionClaims, line: ForecastRow) {

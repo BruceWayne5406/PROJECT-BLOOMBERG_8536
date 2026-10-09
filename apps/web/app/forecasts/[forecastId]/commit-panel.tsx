@@ -519,7 +519,8 @@ function OfferSplitsForm({
       <h3>Offer or replace unaccepted splits</h3>
       <p className="lede">
         Accepted slices stay. Offered rows are superseded and replaced. Include a
-        zero-qty row with a reason_code for any remainder.
+        zero-qty row with a reason_code for any remainder. Inside the firm fence
+        every replaced split needs a reason_code — silence is not a de-commit.
       </p>
       {splits.map((split, i) => (
         <div className="split-row" key={i}>
@@ -548,7 +549,7 @@ function OfferSplitsForm({
             value={split.reasonCode}
             onChange={(e) => update(i, { reasonCode: e.target.value })}
           >
-            <option value="">reason</option>
+            <option value="">reason (required inside firm fence)</option>
             {REASON_CODES.map((r) => (
               <option key={r} value={r}>
                 {r}
