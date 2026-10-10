@@ -259,7 +259,8 @@ function ChangeOrderForm({ id, onDone }: { id: string; onDone: () => void }) {
       <h2>Propose change order</h2>
       <p className="lede">
         Post-firm-fence amendments need a <code>reason_code</code>. Both parties must accept
-        before the last promise date moves.
+        before the last promise date moves. Only one proposed change order can be open on
+        a schedule line — a second accept would overwrite the binding promise.
       </p>
       <form
         className="form-grid"

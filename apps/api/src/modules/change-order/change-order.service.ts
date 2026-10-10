@@ -23,6 +23,10 @@ import { toIso } from "../../common/dates";
 import { DbService } from "../../db/db.service";
 import type { SessionClaims } from "../auth/token";
 import { WritebackService } from "../erp-writeback/erp-writeback.service";
+import {
+  openProposedChangeOrderId,
+  siblingProposedChangeOrders,
+} from "./open-change-order";
 
 type PoRow = typeof purchaseOrders.$inferSelect;
 type CoRow = typeof changeOrders.$inferSelect;
@@ -58,6 +62,17 @@ export class ChangeOrderService {
       .where(eq(purchaseOrders.id, purchaseOrderId));
     if (!po) throw new NotFoundException("Purchase order not found");
     this.assertParty(user, po);
+
+    const existing = await this.db
+      .select()
+      .from(changeOrders)
+      .where(eq(changeOrders.purchaseOrderId, po.id));
+    const openId = openProposedChangeOrderId(existing);
+    if (openId) {
+      throw new ConflictException(
+        `${openId} is still proposed on this PO — decide it before filing another change`,
+      );
+    }
 
     if (!input.reasonCode) {
       throw new BadRequestException("A change order always requires a reason_code");
@@ -145,6 +160,16 @@ export class ChangeOrderService {
     const both = Boolean(buyerAcceptedAt) && Boolean(supplierAcceptedAt);
 
     if (both) {
+      const onPo = await this.db
+        .select()
+        .from(changeOrders)
+        .where(eq(changeOrders.purchaseOrderId, po.id));
+      for (const sibling of siblingProposedChangeOrders(onPo, latest.changeOrderId)) {
+        await this.db
+          .update(changeOrders)
+          .set({ status: "superseded" })
+          .where(eq(changeOrders.id, sibling.id));
+      }
       await this.db
         .update(changeOrders)
         .set({ status: "superseded" })
