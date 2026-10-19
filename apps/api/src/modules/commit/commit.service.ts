@@ -12,6 +12,7 @@ import {
   flexibilityBands,
   forecastCommits,
   forecastLines,
+  purchaseOrders,
   tradingPartnerSetups,
   type Database,
 } from "@scp/db";
@@ -27,6 +28,10 @@ import { desc, eq } from "drizzle-orm";
 import { DbService } from "../../db/db.service";
 import type { SessionClaims } from "../auth/token";
 import { toIso } from "../../common/dates";
+import {
+  convertedCommitBlocksSupersede,
+  supersedeAfterConvertMessage,
+} from "./converted-commit";
 
 type CommitRow = typeof forecastCommits.$inferSelect;
 type ForecastRow = typeof forecastLines.$inferSelect;
@@ -143,6 +148,21 @@ export class CommitService {
       .where(eq(forecastLines.id, latest.parentForecastLineId));
     if (!line) throw new NotFoundException("Parent forecast line missing");
     this.assertSupplier(user, line);
+
+    const [converted] = await this.db
+      .select()
+      .from(purchaseOrders)
+      .where(eq(purchaseOrders.sourceCommitId, latest.commitId));
+    if (convertedCommitBlocksSupersede(Boolean(converted)) && converted) {
+      throw new ConflictException(
+        supersedeAfterConvertMessage({
+          commitId: latest.commitId,
+          poNumber: converted.poNumber,
+          line: converted.line,
+          scheduleLine: converted.scheduleLine,
+        }),
+      );
+    }
 
     const tpa = await this.tpa(line.tradingPartnerSetupId);
     const insideFirm = this.insideFirmFence(tpa, line.requestedDate);
@@ -548,6 +568,21 @@ export class CommitService {
       .where(eq(forecastCommits.commitId, commitId))
       .limit(1);
     if (existing) {
+      const [converted] = await tx
+        .select()
+        .from(purchaseOrders)
+        .where(eq(purchaseOrders.sourceCommitId, commitId))
+        .limit(1);
+      if (convertedCommitBlocksSupersede(Boolean(converted)) && converted) {
+        throw new ConflictException(
+          supersedeAfterConvertMessage({
+            commitId,
+            poNumber: converted.poNumber,
+            line: converted.line,
+            scheduleLine: converted.scheduleLine,
+          }),
+        );
+      }
       throw new ConflictException(
         `${commitId} already exists — supersede it via POST /commits/${commitId}/versions`,
       );
